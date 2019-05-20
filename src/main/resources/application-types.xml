@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="invoice" format="json">
+      <types:shape format="json-schema" location="schemas/schema.json"/>
+    </types:type>
+    <types:type name="transfers" format="xml">
+      <types:example format="xml" element="{http://soap.revature.com/}apiTransfer" location="examples/schema.xml"/>
+    </types:type>
+    <types:type name="acct_id" format="java">
+      <types:shape format="raml"><![CDATA[#%RAML 1.0 DataType
+type: number]]></types:shape>
+    </types:type>
+    <types:type name="BankUser" format="xml">
+      <types:example format="xml" element="user" location="examples/bankUserSchema.xml"/>
+    </types:type>
+    <types:type name="memo" format="java">
+      <types:shape format="raml"><![CDATA[#%RAML 1.0 DataType
+type: string]]></types:shape>
+    </types:type>
+    <types:type name="boolean" format="java">
+      <types:shape format="raml"><![CDATA[#%RAML 1.0 DataType
+type: boolean]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#5a8c9543-55ad-4bd9-9bb5-0f5ce43790c2">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:attributes type="invoice[]"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#5b1cb5f0-a2b0-4b7c-85a1-63914dae1999">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="invoice[]"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#a669ac0f-a9e3-4107-b271-64df7f785182">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="invoice"/>
+        </types:message>
+        <types:variables>
+          <types:variable name="CompanyAccount" type="acct_id"/>
+          <types:variable name="CompanyBankUser" type="BankUser"/>
+          <types:variable name="defaultMemo" type="memo"/>
+        </types:variables>
+      </types:input-event>
+      <types:output-event>
+        <types:message>
+          <types:payload type="transfers"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#e109354b-0206-4fcf-aa8c-2dade647c3a8">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="transfers"/>
+        </types:message>
+      </types:input-event>
+      <types:output-event>
+        <types:message>
+          <types:payload type="boolean"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#fb14b376-9856-44e5-8d43-7089c192b04f">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="invoice[]"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#a38ad1b7-8de0-4728-a19e-b3bd2f165e9d">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="boolean"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#35176b1b-d03c-4575-a406-015a70174b49">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:variables>
+          <types:variable name="response" type="invoice"/>
+        </types:variables>
+      </types:input-event>
+    </types:processor-declaration>
+    <types:operation-declaration>
+      <types:inputs>
+        <types:parameter name="value" type="invoice[]"/>
+      </types:inputs>
+    </types:operation-declaration>
+  </types:enrichment>
+</types:mule>

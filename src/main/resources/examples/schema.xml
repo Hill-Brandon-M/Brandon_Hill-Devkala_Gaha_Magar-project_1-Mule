@@ -1,0 +1,23 @@
+<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+    <Body>
+        <apiTransfer xmlns="http://soap.revature.com/">
+            <!-- Optional -->
+            <user xmlns="">
+                <id>1</id>
+                <username>admin</username>
+                <password>password</password>
+                <authorization>ADMIN</authorization>
+                <firstname>John</firstname>
+                <lastname>Doe</lastname>
+                <ssn>abc</ssn>
+                <birthdate>cde</birthdate>
+                <address>efg</address>
+                <phone>ghi</phone>
+            </user>
+            <src xmlns="">1</src>
+            <dst xmlns="">2</dst>
+            <amount xmlns="">20</amount>
+            <memo xmlns="">Test</memo>
+        </apiTransfer>
+    </Body>
+</Envelope>

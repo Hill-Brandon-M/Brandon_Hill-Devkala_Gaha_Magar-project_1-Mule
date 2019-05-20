@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "integer"
+    },
+    "time": {
+      "type": "number"
+    },
+    "balance": {
+      "type": "number"
+    },
+    "acct_id": {
+        "type": "integer"
+    }
+  },
+  "required": [
+    "user_id",
+    "time",
+    "balance",
+    "acct_id"
+  ]
+}

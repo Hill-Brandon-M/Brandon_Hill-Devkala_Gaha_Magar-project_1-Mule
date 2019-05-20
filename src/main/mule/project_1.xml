@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<http:request-config name="HRStar" doc:name="HTTP Request configuration" doc:id="7a8e0405-93be-4b48-8d94-079db0302c89" basePath="/HRStar/api/hr/">
+		<http:request-connection host="localhost" port="8080" />
+	</http:request-config>
+	<http:listener-config name="5050_Listener" doc:name="HTTP Listener config" doc:id="f4a98a50-81f9-48c7-81e0-ef0308e30225" basePath="/call">
+		<http:listener-connection host="localhost" port="5050" />
+	</http:listener-config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="f1b1d2c2-1f6f-4171-9dc3-ac89bfb9d96d" >
+		<wsc:connection wsdlLocation="http://localhost:8080/BankingWebService/banking?wsdl" service="BankServiceImpService" port="BankServiceImpPort" address="http://localhost:8080/BankingWebService/banking" />
+	</wsc:config>
+	<flow name="main" doc:id="1a39a44e-d7da-4c89-b3fc-7c4eb2aa7a18" >
+		<http:listener doc:name="Listener" doc:id="eb14ea4b-140f-466f-8714-fb943020b104" config-ref="5050_Listener" path="/"/>
+		<flow-ref doc:name="Flow Reference" doc:id="99000a8c-6195-46b0-9d55-245800a4992f" name="InvoicePoll" target="invoices" targetValue="#[message.payload]" />
+	</flow>
+	<sub-flow name="InvoicePoll" doc:id="ea95c26d-41f7-4100-be46-43f828356e38" >
+		<set-variable value="#[1]" doc:name="Set Company Bank Account info" doc:id="9a3eddf5-9adc-46ae-9f66-ac8b88314164" variableName="CompanyAccount"/>
+		<set-variable value="DIRECT DEPOSIT TRANSFER" doc:name="Set Default Transfer Memo" doc:id="919d9f8d-ac85-4592-ae4a-d6b263d7a078" variableName="defaultMemo"/>
+		<set-variable value="#[output application/xml --- 
+'user': {
+	'id': 1,
+	'username': 'admin',
+	'password': 'password',
+	'authorization': 'ADMIN',
+	'firstname': 'John',
+	'lastname': 'Doe',
+	'ssn': 'abc',
+	'birthdate': 'cde',
+	'address': 'efg',
+	'phone': 'ghi'
+}]" doc:name="Set Company Bank User" doc:id="8f4b59c1-5a7e-42d3-8a2f-f8ecd5c1daa4" variableName="CompanyBankUser"/>
+		<http:request method="POST" doc:name="HRStar Request" doc:id="5a8c9543-55ad-4bd9-9bb5-0f5ce43790c2" config-ref="HRStar" path="invoices" outputMimeType='application/x-www-form-urlencoded; end="#[(now() as Number)]"; api_key=7659ac5fa92eeb01d8f29ca66c7ae467db79f2d63a33b4dd81c38d08eb88c59cdc347b757e09e26200b2381edd2bac1cbaa93a8558c0f4ba275b490371e4d3ae; start=0' sendBodyMode="ALWAYS" target="response">
+			<http:body ><![CDATA[#[output application/x-www-form-urlencoded --- {'start': (now() as Number - (1000*60*60*24*10)), 'end': now() as Number, 'api_key': '7659ac5fa92eeb01d8f29ca66c7ae467db79f2d63a33b4dd81c38d08eb88c59cdc347b757e09e26200b2381edd2bac1cbaa93a8558c0f4ba275b490371e4d3ae'}]]]></http:body>
+		</http:request>
+		<set-payload value="#[output application/json
+---
+attributes map ( attribute , indexOfAttribute ) -&gt; {
+	acct_id: attribute.acct_id,
+	balance: attribute.balance,
+	user_id: attribute.user_id,
+	time: attribute.time
+}]" doc:name="Set Payload" doc:id="35176b1b-d03c-4575-a406-015a70174b49" />
+		<logger level="INFO" doc:name="Logger" doc:id="fb14b376-9856-44e5-8d43-7089c192b04f" message="#[output application/json --- message]"/>
+		<foreach doc:name="For Each" doc:id="5b1cb5f0-a2b0-4b7c-85a1-63914dae1999" collection="payload">
+			<ee:transform doc:name="Transform Message" doc:id="a669ac0f-a9e3-4107-b271-64df7f785182" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://soap.revature.com/
+---
+{
+	ns0#apiTransfer: {
+		user: vars.CompanyBankUser.user,
+		src: vars.CompanyAccount,
+		dst: payload.acct_id,
+		amount: payload.balance,
+		memo: vars.defaultMemo
+	}
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<wsc:consume operation="apiTransfer" doc:name="Bank SOAP API Call" doc:id="e109354b-0206-4fcf-aa8c-2dade647c3a8" config-ref="Web_Service_Consumer_Config">
+				<wsc:message >
+					<wsc:body ><![CDATA[#[output application/xml
+---
+payload]]]></wsc:body>
+				</wsc:message>
+			</wsc:consume>
+			<logger level="INFO" doc:name="Logger" doc:id="a38ad1b7-8de0-4728-a19e-b3bd2f165e9d" message="#[output application/xml
+---
+payload]"/>
+		</foreach>
+	</sub-flow>
+	<flow name="ScheduledPolling" doc:id="72f7af5f-09fc-4a4b-8945-e0b916a9c778" >
+		<scheduler doc:name="Scheduler" doc:id="91078017-3357-4471-a839-2d28ac9b1ac2" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="14" timeUnit="DAYS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<flow-ref doc:name="Flow Reference" doc:id="4905cd9d-d0f2-4d3d-94af-aaf9b6a806e3" name="InvoicePoll" target="#[payload.'invoices']" targetValue="#[payload]"/>
+	</flow>
+</mule>
